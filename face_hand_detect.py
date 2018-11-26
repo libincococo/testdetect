@@ -153,20 +153,36 @@ def draw_bounding_box_on_image(image, ymin, xmin, ymax, xmax, color, thickness,
         font=font)
     text_bottom -= text_height - 2 * margin
 
+def nothing(emp):
+	pass
 
-def main():
+vidoefile = "/Users/coco/Downloads/少年魔法师第1季01.rmvb"
+
+def main(isvideo = False):
     input_height = 224
     input_width = 224
     input_mean = 128
     input_std = 128
     input_layer = "input"
     output_layer = "final_result"
+    cap = None
+    frames = 0
 
-    # cap = cv2.VideoCapture("/media/sky/ss/our-one-day/This is us.S02E01.mp4")
-    cap = cv2.VideoCapture(0)
+    cv2.namedWindow('gesture')
+
+    if isvideo:
+        cap = cv2.VideoCapture(vidoefile)
+        frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        loop_flag = 0
+        pos = 0
+        cv2.createTrackbar('time', 'gesture', 0, frames, nothing)
+
+    else:
+        cap = cv2.VideoCapture(0)
 
     if not cap.isOpened():
         return
+
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080);
     cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter.fourcc('M', 'J', 'P', 'G'))
@@ -193,9 +209,26 @@ def main():
     detec_sess = tf.Session(graph=detection_graph)
     recog_sess = tf.Session(graph=recog_graph)
     ret, frame = cap.read()
-    cv2.namedWindow('gesture')
+
 
     while ret:
+
+        if isvideo == True:
+            if loop_flag == pos:
+                loop_flag = loop_flag + 1
+                cv2.setTrackbarPos('time', 'gesture', loop_flag)
+            else:
+                pos = cv2.getTrackbarPos('time', 'gesture')
+                loop_flag = pos
+                cap.set(cv2.CAP_PROP_POS_FRAMES, pos)
+
+            for ncountframe in range(0,5):
+                ret, frame = cap.read()
+                if ret == False:
+                    return
+                loop_flag = loop_flag + 1
+                cv2.setTrackbarPos('time', 'gesture', loop_flag)
+
         org_img = frame.copy()
         cv2.cvtColor(frame, cv2.COLOR_BGR2RGB, frame)
 
@@ -250,9 +283,9 @@ def main():
                 if results[top_k[0]] > 0.01:
                     display_str = template.format(recog_labels[top_k[0]], results[top_k[0]])
                     hand_str = recog_labels[top_k[0]]
-                    '''for i in top_k:
+                    for i in top_k:
                         print(template.format(recog_labels[i], results[i]))
-                    print('')'''
+                    print('')
                     visualization(image_np, box0, display_str, thickness=8, use_normalized_coordinates=True)
 
         print("use the total time:%0.3f"%(use_time+gestime))
@@ -305,4 +338,4 @@ if __name__ == '__main__':
     if args.recog_label_path:
         recog_label_path = args.recog_label_path
 
-    main()
+    main(True)
