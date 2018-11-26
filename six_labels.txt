@@ -1,0 +1,6 @@
+down
+left
+other
+right
+stop
+up

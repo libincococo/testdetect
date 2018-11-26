@@ -1,0 +1,1 @@
+export PYTHONPATH=$PYTHONPATH:/Users/libin/Documents/code/models-master/research:/Users/libin/Documents/code/models-master/research/slim:/Users/libin/Documents/code/models-master/research/object_detection

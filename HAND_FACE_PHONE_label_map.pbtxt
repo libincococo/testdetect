@@ -1,0 +1,12 @@
+item {
+  id: 1
+  name: 'Human hand'
+}
+item {
+  id: 2
+  name: 'Human face'
+}
+item {
+  id: 3
+  name: 'Mobile phone'
+}
