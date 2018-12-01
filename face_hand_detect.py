@@ -153,12 +153,32 @@ def draw_bounding_box_on_image(image, ymin, xmin, ymax, xmax, color, thickness,
         font=font)
     text_bottom -= text_height - 2 * margin
 
+def get_roi_box(box, scale=1.1):
+  top, left, bottom, right = box
+  height = (bottom - top) * scale
+  width = (right - left) * scale
+  center = [(top + bottom) / 2.0, (left + right) / 2.0]
+  new_top = center[0] - height/2.0
+  if new_top < 0:
+    new_top = 0
+  new_left = center[1] - width/2.0
+  if new_left < 0:
+    new_left = 0
+  new_bottom = center[0] + height/2.0
+  if new_bottom > 1:
+    new_bottom = 1
+  new_right = center[1] + width/2.0
+  if new_right >1:
+    new_right = 1
+
+  return (new_top, new_left, new_bottom, new_right)
+
 def nothing(emp):
 	pass
 
-vidoefile = "/Users/coco/Downloads/少年魔法师第1季01.rmvb"
 
-def main(isvideo = False):
+
+def main(vidoefile,isvideo = False):
     input_height = 224
     input_width = 224
     input_mean = 128
@@ -178,7 +198,7 @@ def main(isvideo = False):
         cv2.createTrackbar('time', 'gesture', 0, frames, nothing)
 
     else:
-        cap = cv2.VideoCapture(0)
+        cap = cv2.VideoCapture(1)
 
     if not cap.isOpened():
         return
@@ -222,12 +242,13 @@ def main(isvideo = False):
                 loop_flag = pos
                 cap.set(cv2.CAP_PROP_POS_FRAMES, pos)
 
-            for ncountframe in range(0,5):
-                ret, frame = cap.read()
-                if ret == False:
-                    return
-                loop_flag = loop_flag + 1
-                cv2.setTrackbarPos('time', 'gesture', loop_flag)
+            if False:
+                for ncountframe in range(0,1):
+                    ret, frame = cap.read()
+                    if ret == False:
+                        return
+                    loop_flag = loop_flag + 1
+                    cv2.setTrackbarPos('time', 'gesture', loop_flag)
 
         org_img = frame.copy()
         cv2.cvtColor(frame, cv2.COLOR_BGR2RGB, frame)
@@ -249,9 +270,14 @@ def main(isvideo = False):
         num_detections = int(output_dict['num_detections'][0])
         gestime = 0
 
+        hand_strs = []
+        hand_images = []
+
         for stepss in range(0, num_detections):
 
-            if output_dict['detection_scores'][0][stepss] < 0.3:  #threadhold
+
+
+            if output_dict['detection_scores'][0][stepss] < 0.2:  #threadhold
                 break
             if output_dict["detection_classes"][0][stepss] == 2 or output_dict["detection_classes"][0][stepss] == 3:
                 box0 = output_dict['detection_boxes'][0][stepss]
@@ -268,8 +294,10 @@ def main(isvideo = False):
                 sz = image_np.shape
                 x = sz[0]
                 y = sz[1]
+                box0 = get_roi_box(box0,1.3)
                 roi = frame[int(x * box0[0]): int(x * box0[2]), int(y * box0[1]): int(y * box0[3])]
                 hand_img = roi.copy()
+                hand_images.append(hand_img)
                 feed = recog_sess.run(input_tensor, feed_dict={input_img: roi})
                 start = time.time()
                 results = recog_sess.run(output_operation.outputs[0],
@@ -279,10 +307,11 @@ def main(isvideo = False):
                 results = np.squeeze(results)
                 top_k = results.argsort()[-5:][::-1]
                 print('Recognition time: {:.3f}s\n'.format(end - start))
-                template = "{} (score={:0.5f})"
+                template = "{} (score={:0.3f})"
                 if results[top_k[0]] > 0.01:
                     display_str = template.format(recog_labels[top_k[0]], results[top_k[0]])
                     hand_str = recog_labels[top_k[0]]
+                    hand_strs.append(hand_str)
                     for i in top_k:
                         print(template.format(recog_labels[i], results[i]))
                     print('')
@@ -297,12 +326,15 @@ def main(isvideo = False):
             filename = time.strftime("%Y-%m-%d.%H:%M:%S", time.localtime())
             filename = "save/"+filename+".jpg"
             try:
-                filename_hand = "save/" + time.strftime("%Y-%m-%d.%H:%M:%S_", time.localtime())+hand_str + "_hand.jpg"
-                cv2.cvtColor(hand_img, cv2.COLOR_RGB2BGR, hand_img)
-                cv2.imwrite(filename_hand,hand_img)
+                for count in range(len(hand_images)):
+                    filename_hand = "save/" + time.strftime("%Y-%m-%d.%H:%M:%S_", time.localtime())+hand_strs[count] +"_"+str(count)+ "_hand.jpg"
+
+                    hand_ori = hand_images[count]
+                    cv2.cvtColor(hand_ori, cv2.COLOR_RGB2BGR, hand_ori)
+                    cv2.imwrite(filename_hand,hand_ori)
             except:
                 print("the hand image is error")
-            cv2.imwrite(filename, org_img)
+            #cv2.imwrite(filename, org_img)  #保存完整图片
         if key == 27 or key == ord('q'):
             cv2.destroyWindow('gesture')
             break
@@ -315,12 +347,23 @@ def main(isvideo = False):
 
 
 if __name__ == '__main__':
-    detec_model_path = 'ssd_v1_32w.pb'
+    detec_model_path = 'ssd_v1_picked_500x500.pb'
     detec_label_map_path = 'HAND_FACE_PHONE_label_map.pbtxt'
+
+
+    recog_model_path = 'all_eight_graph.pb'
+    recog_label_path = 'all_eight_labels.txt'
+
+    recog_model_path = 'retrained_graph.pb'
+    recog_label_path = 'retrained_labels.txt'
+
+
+
+    recog_model_path = 'all_eight_graph.pb'
+    recog_label_path = 'all_eight_labels.txt'
 
     recog_model_path = 'six_graph.pb'
     recog_label_path = 'six_labels.txt'
-
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--detec_model_path')
@@ -337,5 +380,5 @@ if __name__ == '__main__':
         recog_model_path = args.recog_model_path
     if args.recog_label_path:
         recog_label_path = args.recog_label_path
-
-    main(True)
+    vidoefile = "/Volumes/ss/movies/[电影天堂-www.dy2018.net]青春期撞上更年期2-21.rmvb"
+    main(vidoefile,True)
