@@ -178,7 +178,7 @@ def nothing(emp):
 
 
 
-def main(vidoefile,isvideo = False):
+def main(vidoefile,isvideo = False,isimage=False):
     input_height = 224
     input_width = 224
     input_mean = 128
@@ -187,25 +187,40 @@ def main(vidoefile,isvideo = False):
     output_layer = "final_result"
     cap = None
     frames = 0
+    frame = None
+    ret = True
+    waitkeytime=10
 
     cv2.namedWindow('gesture')
+    if isimage:
+        isvideo = False
+        waitkeytime = 5000
 
-    if isvideo:
+
+    if isvideo and isimage == False:
         cap = cv2.VideoCapture(vidoefile)
+        if not cap.isOpened():
+            return
         frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         loop_flag = 0
         pos = 0
         cv2.createTrackbar('time', 'gesture', 0, frames, nothing)
+        ret, frame = cap.read()
 
-    else:
-        cap = cv2.VideoCapture(1)
+    if isvideo == False and isimage == False:
+        cap = cv2.VideoCapture(0)
+        if not cap.isOpened():
+            return
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080);
+        cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter.fourcc('M', 'J', 'P', 'G'))
+        ret, frame = cap.read()
 
-    if not cap.isOpened():
-        return
 
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080);
-    cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter.fourcc('M', 'J', 'P', 'G'))
+    if isimage:
+        frame = cv2.imread(vidoefile)
+        print(frame.shape)
+
 
     detection_graph = load_detec_graph(detec_model_path)
     label_map = load_detec_labe_map(detec_label_map_path)
@@ -228,8 +243,6 @@ def main(vidoefile,isvideo = False):
 
     detec_sess = tf.Session(graph=detection_graph)
     recog_sess = tf.Session(graph=recog_graph)
-    ret, frame = cap.read()
-
 
     while ret:
 
@@ -275,8 +288,6 @@ def main(vidoefile,isvideo = False):
 
         for stepss in range(0, num_detections):
 
-
-
             if output_dict['detection_scores'][0][stepss] < 0.2:  #threadhold
                 break
             if output_dict["detection_classes"][0][stepss] == 2 or output_dict["detection_classes"][0][stepss] == 3:
@@ -294,7 +305,7 @@ def main(vidoefile,isvideo = False):
                 sz = image_np.shape
                 x = sz[0]
                 y = sz[1]
-                box0 = get_roi_box(box0,1.3)
+                box0 = get_roi_box(box0,1.0)
                 roi = frame[int(x * box0[0]): int(x * box0[2]), int(y * box0[1]): int(y * box0[3])]
                 hand_img = roi.copy()
                 hand_images.append(hand_img)
@@ -321,29 +332,32 @@ def main(vidoefile,isvideo = False):
         cv2.cvtColor(image_np, cv2.COLOR_BGR2RGB, image_np)
 
         cv2.imshow('gesture', image_np)
-        key = cv2.waitKey(10) & 0xFF
-        if key == ord('s'):
-            filename = time.strftime("%Y-%m-%d.%H:%M:%S", time.localtime())
+        key = cv2.waitKey(waitkeytime) & 0xFF
+        if key == ord('s') :
+            filename = time.strftime("%Y-%m-%d.%H-%M-%S", time.localtime())
             filename = "save/"+filename+".jpg"
             try:
                 for count in range(len(hand_images)):
-                    filename_hand = "save/" + time.strftime("%Y-%m-%d.%H:%M:%S_", time.localtime())+hand_strs[count] +"_"+str(count)+ "_hand.jpg"
+                    filename_hand = "save/" + time.strftime("%Y-%m-%d.%H-%M-%S_", time.localtime())+hand_strs[count] +"_"+str(count)+ "_hand.jpg"
 
                     hand_ori = hand_images[count]
                     cv2.cvtColor(hand_ori, cv2.COLOR_RGB2BGR, hand_ori)
                     cv2.imwrite(filename_hand,hand_ori)
             except:
                 print("the hand image is error")
-            #cv2.imwrite(filename, org_img)  #保存完整图片
-        if key == 27 or key == ord('q'):
+            cv2.imwrite(filename, org_img)  #保存完整图片
+
+        if key == 27 or key == ord('q') or isimage:
             cv2.destroyWindow('gesture')
             break
+
 
         ret, frame = cap.read()
 
     recog_sess.close()
     detec_sess.close()
-    cap.release()
+    if cap != None:
+        cap.release()
 
 
 if __name__ == '__main__':
@@ -354,8 +368,7 @@ if __name__ == '__main__':
     recog_model_path = 'all_eight_graph.pb'
     recog_label_path = 'all_eight_labels.txt'
 
-    recog_model_path = 'retrained_graph.pb'
-    recog_label_path = 'retrained_labels.txt'
+
 
 
 
@@ -364,6 +377,8 @@ if __name__ == '__main__':
 
     recog_model_path = 'six_graph.pb'
     recog_label_path = 'six_labels.txt'
+    recog_model_path = 'retrained_graph.pb'
+    recog_label_path = 'retrained_labels.txt'
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--detec_model_path')
@@ -380,5 +395,6 @@ if __name__ == '__main__':
         recog_model_path = args.recog_model_path
     if args.recog_label_path:
         recog_label_path = args.recog_label_path
-    vidoefile = "/Volumes/ss/movies/[电影天堂-www.dy2018.net]青春期撞上更年期2-21.rmvb"
-    main(vidoefile,True)
+    vidoefile = "/Volumes/ss/2018-12-1.mov"
+    vidoefile = "save/2018-12-01.17-47-40.jpg"
+    main(vidoefile,False,isimage=False)
