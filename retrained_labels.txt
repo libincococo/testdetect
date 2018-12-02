@@ -1,0 +1,6 @@
+other
+rdown
+rleft
+rright
+rstop
+rup
