@@ -68,13 +68,15 @@ def load_labels(label_file):
   return label
 
 if __name__ == "__main__":
-  file_name = "/media/sky/8C6C1B5A6C1B3E80/code/models/research/slim/gesture/libin/rleft/" \
-              "2018-11-26.15:42:24_right_hand.jpg"
+  file_name = "save/8.jpg"
 
 
 
   model_file = 'six_graph.pb'
   label_file = 'six_labels.txt'
+
+  model_file = 'retrained_graph.pb'
+  label_file = 'retrained_labels.txt'
 
   input_height = 224
   input_width = 224

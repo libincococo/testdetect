@@ -355,7 +355,7 @@ def main(vidoefile,playtype = 0):
                     cv2.imwrite(filename_hand,hand_ori)
             except:
                 print("the hand image is error")
-            cv2.imwrite(filename, org_img)  #保存完整图片
+            #cv2.imwrite(filename, org_img)  #保存完整图片
 
         if key == 27 or key == ord('q') or isimage:
             cv2.destroyWindow('gesture')
@@ -406,6 +406,6 @@ if __name__ == '__main__':
         recog_model_path = args.recog_model_path
     if args.recog_label_path:
         recog_label_path = args.recog_label_path
-    vidoefile = "/Volumes/ss/2018-12-1.mov"
-    vidoefile = "save/2018-12-01.17-47-40.jpg"
-    main(vidoefile,2)
+    vidoefile = "/Volumes/ss/hand/2018-12-2.mov"
+    #vidoefile = "save/2018-12-01.17-47-40.jpg"
+    main(vidoefile,1)
