@@ -177,8 +177,8 @@ def nothing(emp):
 	pass
 
 
-
-def main(vidoefile,isvideo = False,isimage=False):
+# playtype 0 播放摄像头， 1 播放视频文件  2 播放图片
+def main(vidoefile,playtype = 0):
     input_height = 224
     input_width = 224
     input_mean = 128
@@ -190,6 +190,16 @@ def main(vidoefile,isvideo = False,isimage=False):
     frame = None
     ret = True
     waitkeytime=10
+
+    if playtype == 0:
+        isvideo = False
+        isimage = False
+    if playtype == 1:
+        isvideo = True
+        isimage = False
+    if playtype >=2 :
+        isvideo = False
+        isimage = True
 
     cv2.namedWindow('gesture')
     if isimage:
@@ -377,6 +387,7 @@ if __name__ == '__main__':
 
     recog_model_path = 'six_graph.pb'
     recog_label_path = 'six_labels.txt'
+    
     recog_model_path = 'retrained_graph.pb'
     recog_label_path = 'retrained_labels.txt'
 
@@ -397,4 +408,4 @@ if __name__ == '__main__':
         recog_label_path = args.recog_label_path
     vidoefile = "/Volumes/ss/2018-12-1.mov"
     vidoefile = "save/2018-12-01.17-47-40.jpg"
-    main(vidoefile,False,isimage=False)
+    main(vidoefile,2)
